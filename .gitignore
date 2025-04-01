@@ -333,6 +333,7 @@ __pycache__/
 tools/**
 !tools/packages.config
 build/*
+!build/.gitkeep
 
 libs/*
 
