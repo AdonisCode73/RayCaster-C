@@ -33,6 +33,42 @@ void drawCircle(SDL_Surface* surf, struct Circle circle) {
 	}
 }
 
+void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect) {
+
+	for (int a = 0; a <= 360; a++) {
+		double radians = a * (M_PI / 180);
+
+		double dx = cos(radians);
+		double dy = sin(radians);
+
+		double X = dx * 800;
+		double Y = dy * 800;
+
+		double x = circle.x;
+		double y = circle.y;
+
+		for (int i = 0; i < 800; i++) {
+			if (calculateCollision(rect, x, y)) {
+				continue;
+			}
+			else {
+				x += dx;
+				y += dy;
+
+				SDL_Rect pixel = { x, y, 1, 1 };
+				SDL_FillRect(surf, &pixel, COLOUR_YELLOW);
+			}
+		}
+	}
+}
+
+int calculateCollision(SDL_Rect rect, double cx, double cy) {
+	if ((cx > rect.x && cx < rect.x + rect.w) && (cy >= rect.y && cy < rect.y + rect.h)) {
+		return 1;
+	}
+	return 0;
+}
+
 int main() {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Failed to init SDL2: %s", SDL_GetError());
@@ -61,6 +97,7 @@ int main() {
 
 	struct Circle circle = { 50.0, 100, WIN_HEIGHT / 2 };
 	drawCircle(window_surface, circle);
+	drawRays(window_surface, circle, rect);
 	SDL_UpdateWindowSurface(win);
 	int windowAlive = 1; 
 
