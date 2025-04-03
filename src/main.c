@@ -34,9 +34,9 @@ void drawCircle(SDL_Surface* surf, struct Circle circle) {
 	}
 }
 
-void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 colour) {
+void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 colour, double angleIncrement) {
 
-	for (double a = 0; a <= 360; a = a + 0.15) {
+	for (double a = 0; a <= 360; a = a + angleIncrement) {
 		double radians = a * (M_PI / 180);
 
 		double dx = cos(radians);
@@ -54,6 +54,9 @@ void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 col
 		colour = COLOUR_YELLOW;
 
 		for (int i = 0; i < 1000; i++) {
+			if (x < 0 || x >= WIN_WIDTH || y < 0 || y >= WIN_HEIGHT) {
+				break;
+			}
 			if (insideCircle) {
 				if (calculateCircleCollision(circle, x, y)) {
 					x += dx;
@@ -99,8 +102,8 @@ int calculateColourDegradation(double index, Uint32 colour) {
 	int G = (colour >> 8) & 0xFF;
 	int B = colour & 0xFF;
 
-	double brightness = 1.0 - (index / 400.0);
-	if (brightness < 0){ 
+	double brightness = 1.0 - (index / 1000.0);
+	if (brightness < 0) {
 		brightness = 0;
 	}
 
@@ -108,7 +111,7 @@ int calculateColourDegradation(double index, Uint32 colour) {
 	G = (int)(G * brightness);
 	B = (int)(B * brightness);
 
-	return (Uint32) ((R << 16) | (G << 8) | B);
+	return (Uint32)((R << 16) | (G << 8) | B);
 }
 
 int main() {
@@ -139,7 +142,7 @@ int main() {
 
 	struct Circle circle = { 50.0, 100, WIN_HEIGHT / 2 };
 	drawCircle(window_surface, circle);
-	drawRays(window_surface, circle, rect, COLOUR_YELLOW);
+	drawRays(window_surface, circle, rect, COLOUR_YELLOW, 0.15);
 	SDL_UpdateWindowSurface(win);
 	int windowAlive = 1;
 
