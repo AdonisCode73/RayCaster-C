@@ -4,6 +4,7 @@
 
 #define WIN_HEIGHT 720
 #define WIN_WIDTH 1280
+#define COLOUR_BLACK 0x000000
 #define COLOUR_GREEN 0x002000
 #define COLOUR_YELLOW 0xffd43b
 #define COLOUR_SUN 0xfffbd4
@@ -136,6 +137,8 @@ int main() {
 	int height = 200;
 	SDL_Rect rect = { (WIN_WIDTH / 2) - width / 2, (WIN_HEIGHT / 2) - height / 2, width, height };
 
+	SDL_Rect eraseScreen = { 0, 0, WIN_WIDTH, WIN_HEIGHT };
+
 	SDL_FillRect(window_surface, &rect, COLOUR_GREEN);
 
 	struct Circle circle = { 50.0, 100, WIN_HEIGHT / 2 };
@@ -153,9 +156,21 @@ int main() {
 			case SDL_QUIT:
 				windowAlive = 0;
 				break;
+			case SDL_MOUSEMOTION:
+				if (e.motion.state != 0) {
+					circle.x = e.motion.x;
+					circle.y = e.motion.y;
+				}
 			}
-			SDL_UpdateWindowSurface(win);
 		}
+		SDL_FillRect(window_surface, &eraseScreen, COLOUR_BLACK);
+		
+		drawCircle(window_surface, circle);
+		drawRays(window_surface, circle, rect, COLOUR_YELLOW, 1.0, 800.0);
+		SDL_FillRect(window_surface, &rect, COLOUR_GREEN);
+
+		SDL_UpdateWindowSurface(win);
+		SDL_Delay(5);
 	}
 	return 0;
 }
