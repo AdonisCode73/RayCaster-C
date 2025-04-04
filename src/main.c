@@ -15,6 +15,12 @@ struct Circle {
 	double y;
 };
 
+struct Rectangle_ {
+	SDL_Rect* rect;
+
+	int posOrNegMovement;
+};
+
 // any pixel that is located within the circle is drawn
 // calculated by getting the equation of the circle and checking that the distance squared of co-ords X,Y is less than radius squared
 // if the distance squared is greater then these co-ords are beyond the circumference of the circle
@@ -33,6 +39,19 @@ void drawCircle(SDL_Surface* surf, struct Circle circle) {
 			}
 		}
 	}
+}
+
+void drawRectangle(SDL_Surface* surf, struct Rectangle_* rect, Uint32 colour, double speed) {
+	if (rect->rect->y < 0) {
+		rect->posOrNegMovement = 1;
+		/*rect->speed *= 1;*/
+	}
+	if (rect->rect->y + rect->rect->h > WIN_HEIGHT) {
+		rect->posOrNegMovement = -1;
+		/*rect->speed *= -1;*/
+	}
+	rect->rect->y += rect->posOrNegMovement * speed;
+	SDL_FillRect(surf, rect->rect, colour);
 }
 
 void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 colour, double angleIncrement, double max_pixels) {
@@ -135,16 +154,13 @@ int main() {
 
 	int width = 200;
 	int height = 200;
+
 	SDL_Rect rect = { (WIN_WIDTH / 2) - width / 2, (WIN_HEIGHT / 2) - height / 2, width, height };
+	struct Rectangle_ rect_ = { &rect, 1};
 
 	SDL_Rect eraseScreen = { 0, 0, WIN_WIDTH, WIN_HEIGHT };
 
-	SDL_FillRect(window_surface, &rect, COLOUR_GREEN);
-
 	struct Circle circle = { 50.0, 100, WIN_HEIGHT / 2 };
-	drawCircle(window_surface, circle);
-	drawRays(window_surface, circle, rect, COLOUR_YELLOW, 0.15, 800.0);
-	SDL_UpdateWindowSurface(win);
 	int windowAlive = 1;
 
 	while (windowAlive) {
@@ -164,10 +180,13 @@ int main() {
 			}
 		}
 		SDL_FillRect(window_surface, &eraseScreen, COLOUR_BLACK);
-		
+
 		drawCircle(window_surface, circle);
+		//drawRays(window_surface, circle, rect, COLOUR_YELLOW, 0.15, 800.0); Uncomment this and comment below if you want more natural light
+		// commented out for performance reasons 
 		drawRays(window_surface, circle, rect, COLOUR_YELLOW, 1.0, 800.0);
-		SDL_FillRect(window_surface, &rect, COLOUR_GREEN);
+
+		drawRectangle(window_surface, &rect_, COLOUR_GREEN, 2.5);
 
 		SDL_UpdateWindowSurface(win);
 		SDL_Delay(5);
