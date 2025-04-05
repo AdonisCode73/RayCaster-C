@@ -27,15 +27,12 @@ It's assumed that you have the following prior to running the application:
 
 Download SDL2 VC and then extract it into the libs folder, make sure to follow the CMake folder paths.
 cd to the build folder and then run:
-cmake ..
-cmake --build .
+- cmake ..
+- cmake --build .
 This will build the .exe which you can then run.
 The application should run fine, if there issues running the project contact me via email.
 
 ## Graphics
-
-### Example Ray Casting
-![Ray Casting](Assets/RayCaster.mkv)
 
 ### Circle drawing calculations
 ![Ray Casting](Assets/circle_calc.png)
