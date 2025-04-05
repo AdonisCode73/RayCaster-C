@@ -36,5 +36,5 @@ The application should run fine, if there issues running the project contact me 
 
 ### Circle drawing calculations
 ![Ray Casting](Assets/circle_calc.png)
-A point (X,Y) is taken and then from 0,0 to X,Y the equation of line is gotten. If this is greater than the equation of line from 0,0 to any point on the radius then it must be outside the scope of the circle and will not be drawn.
+A point (X,Y) is taken and then the equation of the line from point (H,K) to (X,Y) is calculated. If this is greater than the equation of line from (H,K) to any point on the circumference then it must be outside the scope of the circle and will not be drawn.
 ---
