@@ -5,7 +5,7 @@
 #define WIN_HEIGHT 720
 #define WIN_WIDTH 1280
 #define COLOUR_BLACK 0x000000
-#define COLOUR_GREEN 0x002000
+#define COLOUR_GREEN 0x008000
 #define COLOUR_YELLOW 0xffd43b
 #define COLOUR_SUN 0xfffbd4
 
@@ -41,17 +41,26 @@ void drawCircle(SDL_Surface* surf, struct Circle circle) {
 	}
 }
 
-void drawRectangle(SDL_Surface* surf, struct Rectangle_* rect, Uint32 colour, double speed) {
+void drawRectangle(SDL_Surface* surf, struct Rectangle_* rect, Uint32 colour, double speed, struct Circle circle, double max_distance) {
 	if (rect->rect->y < 0) {
 		rect->posOrNegMovement = 1;
-		/*rect->speed *= 1;*/
 	}
 	if (rect->rect->y + rect->rect->h > WIN_HEIGHT) {
 		rect->posOrNegMovement = -1;
-		/*rect->speed *= -1;*/
 	}
 	rect->rect->y += rect->posOrNegMovement * speed;
-	SDL_FillRect(surf, rect->rect, colour);
+
+	for (int x = rect->rect->x; x < rect->rect->x + rect->rect->w; x++) {
+
+		for (int y = rect->rect->y; y < rect->rect->y + rect->rect->h; y++) {
+			double distance = sqrt(pow(x - circle.x, 2) + pow(y - circle.y, 2));
+
+			Uint32 degraded_colour = calculateColourDegradation(distance, colour, max_distance);
+			SDL_Rect pixel = { x, y, 1, 1 };
+
+			SDL_FillRect(surf, &pixel, degraded_colour);
+		}
+	}
 }
 
 void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 colour, double angleIncrement, double max_pixels) {
@@ -78,22 +87,18 @@ void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 col
 					y += dy;
 					continue;
 				}
-				else {
-					insideCircle = 0;
-				}
+				insideCircle = 0;
 			}
 
 			if (calculateRectCollision(rect, x, y)) {
 				break;
 			}
 
-			if (!insideCircle) {
-				double distanceFromCircleEdge = sqrt(pow(x - circle.x, 2) + pow(y - circle.y, 2)) - circle.radius;
+			double distanceFromCircleEdge = sqrt(pow(x - circle.x, 2) + pow(y - circle.y, 2)) - circle.radius;
 
-				Uint32 degraded_colour = calculateColourDegradation(distanceFromCircleEdge, colour, max_pixels);
-				SDL_Rect pixel = { (int)round(x), (int)round(y), 1, 1 };
-				SDL_FillRect(surf, &pixel, degraded_colour);
-			}
+			Uint32 degraded_colour = calculateColourDegradation(distanceFromCircleEdge, colour, max_pixels);
+			SDL_Rect pixel = { (int)round(x), (int)round(y), 1, 1 };
+			SDL_FillRect(surf, &pixel, degraded_colour);
 
 			x += dx;
 			y += dy;
@@ -156,7 +161,7 @@ int main() {
 	int height = 200;
 
 	SDL_Rect rect = { (WIN_WIDTH / 2) - width / 2, (WIN_HEIGHT / 2) - height / 2, width, height };
-	struct Rectangle_ rect_ = { &rect, 1};
+	struct Rectangle_ rect_ = { &rect, 1 };
 
 	SDL_Rect eraseScreen = { 0, 0, WIN_WIDTH, WIN_HEIGHT };
 
@@ -186,7 +191,7 @@ int main() {
 		// commented out for performance reasons 
 		drawRays(window_surface, circle, rect, COLOUR_YELLOW, 1.0, 800.0);
 
-		drawRectangle(window_surface, &rect_, COLOUR_GREEN, 2.5);
+		drawRectangle(window_surface, &rect_, COLOUR_GREEN, 2.5, circle, 800.0);
 
 		SDL_UpdateWindowSurface(win);
 		SDL_Delay(5);
