@@ -9,6 +9,8 @@
 #define COLOUR_YELLOW 0xffd43b
 #define COLOUR_SUN 0xfffbd4
 
+#define TABLE_SIZE 361
+
 struct Circle {
 	double radius;
 	double x;
@@ -21,23 +23,50 @@ struct Rectangle_ {
 	int posOrNegMovement;
 };
 
+double cosTable[TABLE_SIZE];
+double sinTable[TABLE_SIZE];
+
 // any pixel that is located within the circle is drawn
 // calculated by getting the equation of the circle and checking that the distance squared of co-ords X,Y is less than radius squared
 // if the distance squared is greater then these co-ords are beyond the circumference of the circle
 void drawCircle(SDL_Surface* surf, struct Circle circle) {
-	double radius_squared = pow(circle.radius, 2);
 
-	for (int x = circle.x - circle.radius; x <= circle.x + circle.radius; x++) {
+	if (SDL_MUSTLOCK(surf)) {
+		if (SDL_LockSurface(surf) < 0) {
+			fprintf(stderr, "Failed to lock surface: %s\n", SDL_GetError());
+			return;
+		}
+	}
 
-		for (int y = circle.y - circle.radius; y <= circle.y + circle.radius; y++) {
+	double radiusSquared = circle.radius * circle.radius;
 
-			double distance_squared = pow(x - circle.x, 2) + pow(y - circle.y, 2);
+	int xStart = (int)(circle.x - circle.radius);
+	int xEnd = (int)(circle.x + circle.radius);
+	int yStart = (int)(circle.y - circle.radius);
+	int yEnd = (int)(circle.y + circle.radius);
 
-			if (distance_squared < radius_squared) {
-				SDL_Rect pixel = { x, y, 1, 1 };
-				SDL_FillRect(surf, &pixel, COLOUR_SUN);
+	Uint32* pixels = (Uint32*)surf->pixels;
+	int pitch = surf->pitch / 4;
+
+	for (int x = xStart; x <= xEnd; x++) {
+		if (x < 0 || x >= WIN_WIDTH) continue;
+
+		for (int y = yStart; y <= yEnd; y++) {
+			if (y < 0 || y >= WIN_HEIGHT) continue;
+
+			double dx = x - circle.x;
+			double dy = y - circle.y;
+
+			double distanceSquared = dx * dx + dy * dy;
+
+			if (distanceSquared < radiusSquared) {
+				pixels[y * pitch + x] = COLOUR_SUN;
 			}
 		}
+	}
+
+	if (SDL_MUSTLOCK(surf)) {
+		SDL_UnlockSurface(surf);
 	}
 }
 
@@ -50,29 +79,65 @@ void drawRectangle(SDL_Surface* surf, struct Rectangle_* rect, Uint32 colour, do
 	}
 	rect->rect->y += rect->posOrNegMovement * speed;
 
-	for (int x = rect->rect->x; x < rect->rect->x + rect->rect->w; x++) {
+	if (SDL_MUSTLOCK(surf)) {
+		if (SDL_LockSurface(surf) < 0) {
+			fprintf(stderr, "Failed to lock surface: %s\n", SDL_GetError());
+			return;
+		}
+	}
 
-		for (int y = rect->rect->y; y < rect->rect->y + rect->rect->h; y++) {
-			double distance = sqrt(pow(x - circle.x, 2) + pow(y - circle.y, 2));
+	double distance = 0.0;
+
+	int xStart = (int)(rect->rect->x);
+	int xEnd = (int)(rect->rect->x + rect->rect->w);
+	int yStart = (int)(rect->rect->y);
+	int yEnd = (int)(rect->rect->y + rect->rect->h);
+
+	Uint32* pixels = (Uint32*)surf->pixels;
+	int pitch = surf->pitch / 4;
+
+	for (int x = xStart; x < xEnd; x++) {
+		if (x < 0 || x >= WIN_WIDTH) continue;
+		for (int y = yStart; y < yEnd; y++) {
+			if (y < 0 || y >= WIN_HEIGHT) continue;
+
+			double dx = x - circle.x;
+			double dy = y - circle.y;
+
+			double distance = sqrt(dx * dx + dy * dy);
 
 			Uint32 degraded_colour = calculateColourDegradation(distance, colour, max_distance);
-			SDL_Rect pixel = { x, y, 1, 1 };
 
-			SDL_FillRect(surf, &pixel, degraded_colour);
+			pixels[y * pitch + x] = degraded_colour;
 		}
+	}
+
+	if (SDL_MUSTLOCK(surf)) {
+		SDL_UnlockSurface(surf);
 	}
 }
 
 void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 colour, double angleIncrement, double max_pixels) {
 
+	if (SDL_MUSTLOCK(surf)) {
+		if (SDL_LockSurface(surf) < 0) {
+			fprintf(stderr, "Failed to lock surface: %s\n", SDL_GetError());
+			return;
+		}
+	}
+
+
 	for (double a = 0; a <= 360; a = a + angleIncrement) {
 		double radians = a * (M_PI / 180);
 
-		double dx = cos(radians);
-		double dy = sin(radians);
-
 		double x = circle.x;
 		double y = circle.y;
+
+		double dx = cosTable[(int)a];
+		double dy = sinTable[(int)a];
+
+		Uint32* pixels = (Uint32*)surf->pixels;
+		int pitch = surf->pitch / 4;
 
 		int insideCircle = 1;
 
@@ -80,6 +145,9 @@ void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 col
 			if (x < 0 || x >= WIN_WIDTH || y < 0 || y >= WIN_HEIGHT) {
 				break;
 			}
+
+			double xSquared = (x - circle.x) * (x - circle.x);
+			double ySquared = (y - circle.y) * (y - circle.y);
 
 			if (insideCircle) {
 				if (calculateCircleCollision(circle, x, y)) {
@@ -94,15 +162,18 @@ void drawRays(SDL_Surface* surf, struct Circle circle, SDL_Rect rect, Uint32 col
 				break;
 			}
 
-			double distanceFromCircleEdge = sqrt(pow(x - circle.x, 2) + pow(y - circle.y, 2)) - circle.radius;
+			double distanceFromCircleEdge = sqrt(xSquared + ySquared) - circle.radius;
 
 			Uint32 degraded_colour = calculateColourDegradation(distanceFromCircleEdge, colour, max_pixels);
-			SDL_Rect pixel = { (int)round(x), (int)round(y), 1, 1 };
-			SDL_FillRect(surf, &pixel, degraded_colour);
+			pixels[(int)y * pitch + (int)x] = degraded_colour;
 
 			x += dx;
 			y += dy;
 		}
+	}
+
+	if (SDL_MUSTLOCK(surf)) {
+		SDL_UnlockSurface(surf);
 	}
 }
 
@@ -114,7 +185,11 @@ int calculateRectCollision(SDL_Rect rect, double cx, double cy) {
 }
 
 int calculateCircleCollision(struct Circle circle, double cx, double cy) {
-	if ((pow(cx - circle.x, 2) + pow(cy - circle.y, 2)) <= pow(circle.radius, 2)) {
+	double xSquared = (cx - circle.x) * (cx - circle.x);
+	double ySquared = (cy - circle.y) * (cy - circle.y);
+	double radius = circle.radius * circle.radius;
+
+	if (xSquared + ySquared <= radius) {
 		return 1;
 	}
 	return 0;
@@ -137,6 +212,15 @@ int calculateColourDegradation(double distance, Uint32 colour, double max_pixels
 	return (Uint32)((R << 16) | (G << 8) | B);
 }
 
+void calculateTables(double angleIncrement) {
+	for (double a = 0; a <= 360; a = a + angleIncrement) {
+		double radians = a * (M_PI / 180);
+
+		cosTable[(int)a] = cos(radians);
+		sinTable[(int)a] = sin(radians);
+	}
+}
+
 int main() {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		printf("Failed to init SDL2: %s", SDL_GetError());
@@ -157,8 +241,8 @@ int main() {
 		return;
 	}
 
-	int width = 200;
-	int height = 200;
+	const int width = 200;
+	const int height = 200;
 
 	SDL_Rect rect = { (WIN_WIDTH / 2) - width / 2, (WIN_HEIGHT / 2) - height / 2, width, height };
 	struct Rectangle_ rect_ = { &rect, 1 };
@@ -167,6 +251,9 @@ int main() {
 
 	struct Circle circle = { 50.0, 100, WIN_HEIGHT / 2 };
 	int windowAlive = 1;
+
+	double angleIncrement = 1.0;
+	int calculatedTables = 0;
 
 	while (windowAlive) {
 		SDL_Event e;
@@ -186,9 +273,12 @@ int main() {
 		}
 		SDL_FillRect(window_surface, &eraseScreen, COLOUR_BLACK);
 
+		if (!calculatedTables) {
+			calculateTables(angleIncrement);
+			calculatedTables = 1;
+		}
+
 		drawCircle(window_surface, circle);
-		//drawRays(window_surface, circle, rect, COLOUR_YELLOW, 0.15, 800.0); Uncomment this and comment below if you want more natural light
-		// commented out for performance reasons 
 		drawRays(window_surface, circle, rect, COLOUR_YELLOW, 1.0, 800.0);
 
 		drawRectangle(window_surface, &rect_, COLOUR_GREEN, 2.5, circle, 800.0);
