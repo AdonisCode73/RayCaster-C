@@ -36,5 +36,6 @@ The application should run fine, if there issues running the project contact me 
 
 ### Demo
 ![Ray Casting Demo](Assets/example.gif)
-(Not representative of live performance)
+
+*(Not representative of live performance)*
 ---
